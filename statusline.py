@@ -285,11 +285,17 @@ def fetch_usage_sync():
             except Exception:
                 return None
 
+        sonnet = data.get("seven_day_sonnet") or {}
+        opus = data.get("seven_day_opus") or {}
         cache_data = {
             "five_hour_used": data.get("five_hour", {}).get("utilization", 0),
             "seven_day_used": data.get("seven_day", {}).get("utilization", 0),
             "five_hour_reset_min": parse_reset_minutes(data.get("five_hour", {}).get("resets_at")),
             "seven_day_reset_min": parse_reset_minutes(data.get("seven_day", {}).get("resets_at")),
+            "sonnet_used": sonnet.get("utilization") if sonnet else None,
+            "sonnet_reset_min": parse_reset_minutes(sonnet.get("resets_at")) if sonnet else None,
+            "opus_used": opus.get("utilization") if opus else None,
+            "opus_reset_min": parse_reset_minutes(opus.get("resets_at")) if opus else None,
             "extra_enabled": data.get("extra_usage", {}).get("is_enabled", False),
             "extra_used": data.get("extra_usage", {}).get("used_credits", 0),
             "extra_limit": data.get("extra_usage", {}).get("monthly_limit", 0),
@@ -350,17 +356,19 @@ def read_cached_usage():
     if cache:
         # Adjust reset minutes for time elapsed since fetch
         elapsed_min = (now - cache.get("fetched_at", now)) / 60
-        r5 = cache.get("five_hour_reset_min")
-        r7 = cache.get("seven_day_reset_min")
-        if r5 is not None:
-            r5 = max(0, int(r5 - elapsed_min))
-        if r7 is not None:
-            r7 = max(0, int(r7 - elapsed_min))
+
+        def adjust(r):
+            return max(0, int(r - elapsed_min)) if r is not None else None
+
         return {
             "u5": cache.get("five_hour_used"),
             "u7": cache.get("seven_day_used"),
-            "r5": r5,
-            "r7": r7,
+            "r5": adjust(cache.get("five_hour_reset_min")),
+            "r7": adjust(cache.get("seven_day_reset_min")),
+            "us": cache.get("sonnet_used"),
+            "rs": adjust(cache.get("sonnet_reset_min")),
+            "uo": cache.get("opus_used"),
+            "ro": adjust(cache.get("opus_reset_min")),
             "extra_enabled": cache.get("extra_enabled", False),
             "extra_used": cache.get("extra_used", 0),
             "extra_limit": cache.get("extra_limit", 0),
@@ -375,7 +383,8 @@ DIAMOND = "\u25c6"  # ◆
 
 # Context gauge (5 blocks)
 ctx_remaining = 100 - ctx_pct_used
-filled = round(min(100, max(0, ctx_remaining)) / 100.0 * 5)
+ctx_val = ctx_remaining if SHOW_REMAINING else ctx_pct_used
+filled = round(min(100, max(0, ctx_val)) / 100.0 * 5)
 gauge = "\u25b0" * filled + "\u25b1" * (5 - filled)  # ▰▱
 
 # Context size label
@@ -399,7 +408,7 @@ line1 = SEP.join(line1_parts)
 # Each segment is (text, priority) - lower priority number = more important (dropped last).
 # When the joined line exceeds MAX_WIDTH, the highest-numbered priorities are dropped first.
 ctx_color = color_pct(ctx_pct_used)
-ctx_str = f"{ctx_color}{gauge}{N} {ctx_remaining}%"
+ctx_str = f"Context: {ctx_color}{gauge}{N} {ctx_val}%"
 if SHOW_CONTEXT_SIZE:
     ctx_str += f" of {ctx_label}"
 
@@ -425,6 +434,20 @@ if usage:
 
     line2_segments.append((f"5h: {used_pct_str(u5)}{pace5}{reset5}", 1))
     line2_segments.append((f"7d: {used_pct_str(u7)}{pace7}{reset7}", 1))
+
+    us = usage.get("us")
+    if us is not None:
+        rs = usage.get("rs")
+        paces = pace_indicator(us, rs, 10080) if SHOW_PACE else ""
+        resets = format_reset(rs) if SHOW_RESET else ""
+        line2_segments.append((f"Sonnet: {used_pct_str(us)}{paces}{resets}", 2))
+
+    uo = usage.get("uo")
+    if uo is not None:
+        ro = usage.get("ro")
+        paceo = pace_indicator(uo, ro, 10080) if SHOW_PACE else ""
+        reseto = format_reset(ro) if SHOW_RESET else ""
+        line2_segments.append((f"Opus: {used_pct_str(uo)}{paceo}{reseto}", 2))
 else:
     if not get_oauth_token():
         line2_segments.append((f"5h: {D}no token{N}", 1))

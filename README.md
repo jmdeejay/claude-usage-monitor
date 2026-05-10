@@ -38,10 +38,11 @@ After install, restart Claude Code. Your statusline now shows:
 
 ```text
 ◆ Opus │ my-project/main
-▰▰▰▰▱ 75% │ ↑50k ↓12k │ 5h: ▰▰▰▰▱ 80% (1h) │ 7d: ▰▰▱▱▱ 34% │ 2m0s
+Context: ▰▰▰▰▱ 75% │ ↑50k ↓12k │ 5h: ▰▰▰▰▱ 80% (1h) │ 7d: ▰▰▱▱▱ 34% │ Sonnet: ▰▰▰▰▱ 78% │ 2m0s
 ```
 
 - **5h / 7d quota** - see how much is left before you hit limits
+- **Per-model quota** - separate `Sonnet:` / `Opus:` bars when your plan exposes per-model limits
 - **Context %** - see when you're running low before Claude tells you
 - **Token counts** - input and output for the current session
 - **Reset countdown** - know when your quota replenishes
@@ -78,13 +79,15 @@ If you want to verify the launcher yourself before restarting Claude Code:
 |---|---|
 | `◆ Opus` | Active model |
 | `my-project/main` | Project name and git branch |
-| `▰▰▰▰▱ 75%` | Context window remaining |
+| `Context: ▰▰▰▰▱ 75%` | Context window remaining |
 | `↑50k ↓12k` | Input and output tokens |
 | `5h: ▰▰▰▰▱ 80% (1h)` | 5-hour quota remaining with bar and reset countdown |
 | `7d: ▰▰▱▱▱ 34% (2d)` | 7-day quota remaining with bar and reset countdown |
+| `Sonnet: ▰▰▰▰▱ 78%` | 7-day Sonnet quota (only shown when your account exposes a separate Sonnet limit) |
+| `Opus: ▰▰▰▰▱ 78%` | 7-day Opus quota (only shown when your account exposes a separate Opus limit) |
 | `2m0s` | Session duration |
 
-All three bars show remaining % by default - they start full (green) and drain toward empty (red) as you use quota, like a fuel gauge. Prefer the fill-up style Claude Code uses? Set `CQB_REMAINING=0`.
+All bars show remaining % by default - they start full (green) and drain toward empty (red) as you use quota, like a fuel gauge. Prefer the fill-up style Claude Code uses? Set `CQB_REMAINING=0` (also flips the context gauge).
 
 ### Color coding
 

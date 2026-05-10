@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Per-model 7-day quota segments. `Sonnet:` and `Opus:` bars render when the usage API exposes a separate `seven_day_sonnet` / `seven_day_opus` block; segments are skipped (no extra width consumed) when the field is `null` for the account's plan.
+- `Context:` label on the context-window gauge so the segment is self-describing alongside `5h:` / `7d:` / `Sonnet:`.
+
+### Changed
+- `CQB_REMAINING=0` now also flips the context gauge (bar fill and number show used %), matching how it already affected 5h/7d. Previously the context gauge was always remaining %, regardless of the env var.
+
 ## v0.1.5
 
 ### Fixed
